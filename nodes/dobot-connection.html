@@ -1,0 +1,95 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dobot-connection', {
+        category: 'config',
+        defaults: {
+            name: {value: ""},
+            host: {value: "192.168.1.6", required: true},
+            port: {value: 29999, required: true, validate: RED.validators.number()},
+            autoConnect: {value: true}
+        },
+        label: function() {
+            return this.name || this.host + ":" + this.port;
+        },
+        oneditprepare: function() {
+            $("#node-config-input-port").on("change", function() {
+                const port = parseInt($(this).val());
+                let hint = "";
+                switch(port) {
+                    case 29999:
+                        hint = "Dashboard Server (Robot Control)";
+                        break;
+                    case 30003:
+                        hint = "Real-time Feedback Port";
+                        break;
+                    case 30004:
+                        hint = "Real-time Data Port";
+                        break;
+                    case 30005:
+                        hint = "Movement Server";
+                        break;
+                    default:
+                        hint = "Custom Port";
+                }
+                $("#port-hint").text(hint);
+            }).trigger("change");
+        },
+        oneditsave: function() {
+            // Validate port based on allowed values
+            const port = parseInt($("#node-config-input-port").val());
+            const allowedPorts = [29999, 30003, 30004, 30005];
+            if (!allowedPorts.includes(port)) {
+                RED.notify("Warning: Using non-standard port " + port, "warning");
+            }
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dobot-connection">
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Dobot Connection">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-server"></i> Host</label>
+        <input type="text" id="node-config-input-host" placeholder="192.168.1.6">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-plug"></i> Port</label>
+        <input type="number" id="node-config-input-port" placeholder="29999">
+        <div class="form-tips" id="port-hint" style="margin-top: 5px;"></div>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-autoConnect"><i class="fa fa-link"></i> Auto Connect</label>
+        <input type="checkbox" id="node-config-input-autoConnect" style="display:inline-block; width:auto; vertical-align:top;">
+        <label for="node-config-input-autoConnect" style="width:70%"> Connect automatically when nodes are deployed</label>
+    </div>
+    <div class="form-tips">
+        <b>Port Information:</b><br/>
+        • 29999: Dashboard Server (Robot Control)<br/>
+        • 30003: Real-time Feedback Port<br/>
+        • 30004: Real-time Data Port<br/>
+        • 30005: Movement Server
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dobot-connection">
+    <p>Configuration node for Dobot robot connection.</p>
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Name <span class="property-type">string</span></dt>
+        <dd>Optional name for this connection</dd>
+        <dt>Host <span class="property-type">string</span></dt>
+        <dd>IP address of the Dobot controller</dd>
+        <dt>Port <span class="property-type">number</span></dt>
+        <dd>Port number for communication:
+            <ul>
+                <li><b>29999</b> - Dashboard Server (Robot Control)</li>
+                <li><b>30003</b> - Real-time Feedback Port</li>
+                <li><b>30004</b> - Real-time Data Port</li>
+                <li><b>30005</b> - Movement Server</li>
+            </ul>
+        </dd>
+        <dt>Auto Connect <span class="property-type">boolean</span></dt>
+        <dd>Automatically connect when flows are deployed</dd>
+    </dl>
+</script>

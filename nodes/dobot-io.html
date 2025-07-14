@@ -1,0 +1,175 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dobot-io', {
+        category: 'dobot',
+        color: '#87D8F5',
+        defaults: {
+            name: {value: ""},
+            connection: {value: "", type: "dobot-connection", required: true},
+            ioType: {value: "DO", required: true},
+            index: {value: "1"},
+            value: {value: "0"}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-microchip",
+        label: function() {
+            return this.name || this.ioType + (this.index ? " " + this.index : "") || "dobot i/o";
+        },
+        paletteLabel: "i/o",
+        oneditprepare: function() {
+            $("#node-input-ioType").on("change", function() {
+                const ioType = $(this).val();
+                const indexRow = $("#index-row");
+                const valueRow = $("#value-row");
+                const indexLabel = $("#index-label");
+                const valueLabel = $("#value-label");
+                const indexHelp = $("#index-help");
+                const valueHelp = $("#value-help");
+                
+                // Configure UI based on I/O type
+                let showIndex = true;
+                let showValue = false;
+                let indexRange = "";
+                let valueRange = "";
+                
+                switch(ioType) {
+                    case "DO":
+                        showValue = true;
+                        indexRange = "1-24";
+                        valueRange = "0 (Low) or 1 (High)";
+                        break;
+                    case "ToolDO":
+                        showValue = true;
+                        indexRange = "1-2";
+                        valueRange = "0 (Low) or 1 (High)";
+                        break;
+                    case "AO":
+                        showValue = true;
+                        indexRange = "1-2";
+                        valueRange = "Analog value";
+                        valueLabel.text("Value");
+                        break;
+                    case "ToolAO":
+                        showValue = true;
+                        indexRange = "1";
+                        valueRange = "Analog value";
+                        valueLabel.text("Value");
+                        break;
+                    case "DI":
+                        indexRange = "1-32";
+                        break;
+                    case "ToolDI":
+                        indexRange = "1-2";
+                        break;
+                    case "AI":
+                        indexRange = "1-2";
+                        break;
+                    case "ToolAI":
+                        indexRange = "1";
+                        break;
+                    case "GetHoldRegs":
+                    case "SetHoldRegs":
+                        showIndex = false;
+                        showValue = false;
+                        break;
+                }
+                
+                if (showIndex) {
+                    indexRow.show();
+                    indexHelp.text("Index range: " + indexRange);
+                } else {
+                    indexRow.hide();
+                }
+                
+                if (showValue) {
+                    valueRow.show();
+                    valueHelp.text(valueRange);
+                    if (ioType.includes("DO")) {
+                        valueLabel.html('<i class="fa fa-power-off"></i> Status');
+                    } else {
+                        valueLabel.html('<i class="fa fa-sliders"></i> Value');
+                    }
+                } else {
+                    valueRow.hide();
+                }
+            }).trigger("change");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dobot-io">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+        <input type="text" id="node-input-connection">
+    </div>
+    <div class="form-row">
+        <label for="node-input-ioType"><i class="fa fa-microchip"></i> I/O Type</label>
+        <select id="node-input-ioType">
+            <optgroup label="Digital Output">
+                <option value="DO">DO - Digital Output</option>
+                <option value="ToolDO">ToolDO - Tool Digital Output</option>
+            </optgroup>
+            <optgroup label="Analog Output">
+                <option value="AO">AO - Analog Output</option>
+                <option value="ToolAO">ToolAO - Tool Analog Output</option>
+            </optgroup>
+            <optgroup label="Digital Input">
+                <option value="DI">DI - Digital Input</option>
+                <option value="ToolDI">ToolDI - Tool Digital Input</option>
+            </optgroup>
+            <optgroup label="Analog Input">
+                <option value="AI">AI - Analog Input</option>
+                <option value="ToolAI">ToolAI - Tool Analog Input</option>
+            </optgroup>
+            <optgroup label="Registers">
+                <option value="GetHoldRegs">Get Hold Registers</option>
+                <option value="SetHoldRegs">Set Hold Registers</option>
+            </optgroup>
+        </select>
+    </div>
+    <div class="form-row" id="index-row">
+        <label for="node-input-index"><i class="fa fa-hashtag"></i> <span id="index-label">Index</span></label>
+        <input type="number" id="node-input-index" placeholder="1">
+        <div class="form-tips" id="index-help" style="margin-top: 5px;"></div>
+    </div>
+    <div class="form-row" id="value-row" style="display:none;">
+        <label for="node-input-value" id="value-label"><i class="fa fa-sliders"></i> Value</label>
+        <input type="text" id="node-input-value" placeholder="0">
+        <div class="form-tips" id="value-help" style="margin-top: 5px;"></div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dobot-io">
+    <p>Control and read Dobot I/O ports.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">object</span></dt>
+        <dd>I/O parameters (varies by type)</dd>
+        <dt class="optional">ioType <span class="property-type">string</span></dt>
+        <dd>Override the configured I/O type</dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Response from the robot</dd>
+        <dt class="optional">value <span class="property-type">number</span></dt>
+        <dd>Parsed value for input operations</dd>
+        <dt>command <span class="property-type">string</span></dt>
+        <dd>The I/O command executed</dd>
+        <dt>raw <span class="property-type">string</span></dt>
+        <dd>The raw command string sent</dd>
+    </dl>
+    <h3>I/O Types</h3>
+    <ul>
+        <li><b>DO/ToolDO</b> - Set digital output (payload: {index, status})</li>
+        <li><b>AO/ToolAO</b> - Set analog output (payload: {index, value})</li>
+        <li><b>DI/ToolDI</b> - Read digital input (payload: {index})</li>
+        <li><b>AI/ToolAI</b> - Read analog input (payload: {index})</li>
+        <li><b>GetHoldRegs</b> - Read registers (payload: {id, addr, count, type})</li>
+        <li><b>SetHoldRegs</b> - Write registers (payload: {id, addr, count, table, type})</li>
+    </ul>
+</script>

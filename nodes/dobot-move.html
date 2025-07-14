@@ -1,0 +1,169 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dobot-move', {
+        category: 'dobot',
+        color: '#87D8F5',
+        defaults: {
+            name: {value: ""},
+            connection: {value: "", type: "dobot-connection", required: true},
+            moveType: {value: "MovJ", required: true},
+            coordType: {value: "cartesian"}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-arrows-alt",
+        label: function() {
+            return this.name || this.moveType || "dobot move";
+        },
+        paletteLabel: "move",
+        oneditprepare: function() {
+            $("#node-input-moveType").on("change", function() {
+                const moveType = $(this).val();
+                const exampleDiv = $("#move-example");
+                let example = "";
+                
+                switch(moveType) {
+                    case "MovJ":
+                    case "MovL":
+                        example = '<code>msg.payload = {x: 200, y: 0, z: 200, r: 0}</code>';
+                        break;
+                    case "JointMovJ":
+                        example = '<code>msg.payload = {j1: 0, j2: 0, j3: 0, j4: 0}</code>';
+                        break;
+                    case "RelMovJ":
+                    case "RelMovL":
+                        example = '<code>msg.payload = {x: 10, y: 0, z: 10, r: 0}</code> or<br/>' +
+                                 '<code>msg.payload = {offset1: 10, offset2: 0, offset3: 10, offset4: 0, offset5: 0, offset6: 0}</code>';
+                        break;
+                    case "Arc":
+                        example = '<code>msg.payload = {<br/>' +
+                                 '&nbsp;&nbsp;mid: {x: 250, y: 50, z: 200, r: 0},<br/>' +
+                                 '&nbsp;&nbsp;end: {x: 300, y: 0, z: 200, r: 0}<br/>' +
+                                 '}</code>';
+                        break;
+                    case "Circle":
+                        example = '<code>msg.payload = {<br/>' +
+                                 '&nbsp;&nbsp;count: 2,<br/>' +
+                                 '&nbsp;&nbsp;mid: {x: 250, y: 50, z: 200, r: 0},<br/>' +
+                                 '&nbsp;&nbsp;end: {x: 300, y: 0, z: 200, r: 0}<br/>' +
+                                 '}</code>';
+                        break;
+                    case "MoveJog":
+                        example = '<code>msg.payload = {<br/>' +
+                                 '&nbsp;&nbsp;axis: "J1+",  // J1+/- J2+/- J3+/- J4+/- X+/- Y+/- Z+/- Rx+/- Ry+/- Rz+/-<br/>' +
+                                 '&nbsp;&nbsp;coordType: 1, // Optional: 1=User, 2=Tool<br/>' +
+                                 '&nbsp;&nbsp;user: 0,      // Optional: User index 0-9<br/>' +
+                                 '&nbsp;&nbsp;tool: 0       // Optional: Tool index 0-9<br/>' +
+                                 '}</code>';
+                        break;
+                    case "StartTrace":
+                        example = '<code>msg.payload = {traceName: "myTrace.txt"}</code>';
+                        break;
+                    case "StartPath":
+                        example = '<code>msg.payload = {<br/>' +
+                                 '&nbsp;&nbsp;traceName: "myPath.txt",<br/>' +
+                                 '&nbsp;&nbsp;const: 0,  // 0=original speed, 1=constant speed<br/>' +
+                                 '&nbsp;&nbsp;cart: 0    // 0=joint path, 1=cartesian path<br/>' +
+                                 '}</code>';
+                        break;
+                    case "StartFCTrace":
+                        example = '<code>msg.payload = {traceName: "myForceTrace.txt"}</code>';
+                        break;
+                    case "Wait":
+                        example = '<code>msg.payload = {time: 1000}  // milliseconds</code>';
+                        break;
+                    case "Sync":
+                    case "Pause":
+                    case "Continue":
+                        example = '<i>No payload required</i>';
+                        break;
+                }
+                
+                exampleDiv.html(example);
+            }).trigger("change");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dobot-move">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+        <input type="text" id="node-input-connection">
+    </div>
+    <div class="form-row">
+        <label for="node-input-moveType"><i class="fa fa-arrows-alt"></i> Move Type</label>
+        <select id="node-input-moveType">
+            <optgroup label="Point-to-Point">
+                <option value="MovJ">MovJ - Joint Motion</option>
+                <option value="MovL">MovL - Linear Motion</option>
+                <option value="JointMovJ">JointMovJ - Joint Space Motion</option>
+            </optgroup>
+            <optgroup label="Relative Motion">
+                <option value="RelMovJ">RelMovJ - Relative Joint Motion</option>
+                <option value="RelMovL">RelMovL - Relative Linear Motion</option>
+            </optgroup>
+            <optgroup label="Path Motion">
+                <option value="Arc">Arc - Arc Motion</option>
+                <option value="Circle">Circle - Circular Motion</option>
+                <option value="MoveJog">MoveJog - Jog Motion</option>
+            </optgroup>
+            <optgroup label="Trajectory">
+                <option value="StartTrace">StartTrace - Trajectory Fitting</option>
+                <option value="StartPath">StartPath - Path Replay</option>
+                <option value="StartFCTrace">StartFCTrace - Force Control Trace</option>
+            </optgroup>
+            <optgroup label="Control">
+                <option value="Sync">Sync - Synchronize</option>
+                <option value="Wait">Wait - Delay</option>
+                <option value="Pause">Pause - Pause Motion</option>
+                <option value="Continue">Continue - Resume Motion</option>
+            </optgroup>
+        </select>
+    </div>
+    <div class="form-row">
+        <label><i class="fa fa-info-circle"></i> Example</label>
+        <div id="move-example" style="font-family: monospace; background-color: #f0f0f0; padding: 10px; border-radius: 4px;">
+        </div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dobot-move">
+    <p>Control Dobot robot movement with various motion commands.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">object</span></dt>
+        <dd>Movement parameters (varies by move type)</dd>
+        <dt class="optional">moveType <span class="property-type">string</span></dt>
+        <dd>Override the configured move type</dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Response from the robot</dd>
+        <dt>command <span class="property-type">string</span></dt>
+        <dd>The movement command executed</dd>
+        <dt>raw <span class="property-type">string</span></dt>
+        <dd>The raw command string sent</dd>
+    </dl>
+    <h3>Movement Types</h3>
+    <h4>Basic Motion</h4>
+    <ul>
+        <li><b>MovJ</b> - Joint interpolated motion to cartesian position</li>
+        <li><b>MovL</b> - Linear interpolated motion to cartesian position</li>
+        <li><b>JointMovJ</b> - Motion to specific joint angles</li>
+    </ul>
+    <h4>Relative Motion</h4>
+    <ul>
+        <li><b>RelMovJ</b> - Relative joint motion from current position</li>
+        <li><b>RelMovL</b> - Relative linear motion from current position</li>
+    </ul>
+    <h4>Path Motion</h4>
+    <ul>
+        <li><b>Arc</b> - Arc motion through mid-point to end-point</li>
+        <li><b>Circle</b> - Circular motion for specified count</li>
+        <li><b>MoveJog</b> - Continuous jog motion along axis</li>
+    </ul>
+</script>

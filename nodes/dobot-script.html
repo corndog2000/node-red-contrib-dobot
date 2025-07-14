@@ -1,0 +1,81 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dobot-script', {
+        category: 'dobot',
+        color: '#87D8F5',
+        defaults: {
+            name: {value: ""},
+            connection: {value: "", type: "dobot-connection", required: true},
+            action: {value: "RunScript", required: true},
+            scriptName: {value: ""}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-file-code-o",
+        label: function() {
+            return this.name || this.action || "dobot script";
+        },
+        paletteLabel: "script",
+        oneditprepare: function() {
+            $("#node-input-action").on("change", function() {
+                const action = $(this).val();
+                const scriptNameRow = $("#scriptname-row");
+                
+                if (action === "RunScript") {
+                    scriptNameRow.show();
+                } else {
+                    scriptNameRow.hide();
+                }
+            }).trigger("change");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dobot-script">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+        <input type="text" id="node-input-connection">
+    </div>
+    <div class="form-row">
+        <label for="node-input-action"><i class="fa fa-play"></i> Action</label>
+        <select id="node-input-action">
+            <option value="RunScript">Run Script</option>
+            <option value="StopScript">Stop Script</option>
+            <option value="PauseScript">Pause Script</option>
+            <option value="ContinueScript">Continue Script</option>
+        </select>
+    </div>
+    <div class="form-row" id="scriptname-row">
+        <label for="node-input-scriptName"><i class="fa fa-file"></i> Script Name</label>
+        <input type="text" id="node-input-scriptName" placeholder="myScript.lua">
+        <div class="form-tips">Script name including extension (e.g., script.lua)</div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dobot-script">
+    <p>Manage Dobot script execution.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Script name (for RunScript action)</dd>
+        <dt class="optional">action <span class="property-type">string</span></dt>
+        <dd>Override the configured action</dd>
+        <dt class="optional">scriptName <span class="property-type">string</span></dt>
+        <dd>Alternative to payload for script name</dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Response from the robot</dd>
+        <dt>command <span class="property-type">string</span></dt>
+        <dd>The script command executed</dd>
+        <dt>raw <span class="property-type">string</span></dt>
+        <dd>The raw command string sent</dd>
+    </dl>
+    <h3>Details</h3>
+    <p>This node allows you to run, stop, pause, and continue Dobot scripts.</p>
+    <p>Scripts are stored in the robot's <code>/dobot/userdata/project/process/trajectory/</code> directory.</p>
+</script>

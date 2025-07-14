@@ -1,0 +1,32 @@
+{
+  "name": "node-red-contrib-dobot",
+  "version": "1.0.0",
+  "description": "Node-RED nodes for controlling Dobot robotic arms",
+  "author": "Your Name",
+  "license": "MIT",
+  "keywords": [
+    "node-red",
+    "dobot",
+    "robotics",
+    "robotic-arm",
+    "automation"
+  ],
+  "node-red": {
+    "nodes": {
+      "dobot-connection": "nodes/dobot-connection.js",
+      "dobot-dashboard": "nodes/dobot-dashboard.js",
+      "dobot-move": "nodes/dobot-move.js",
+      "dobot-io": "nodes/dobot-io.js",
+      "dobot-script": "nodes/dobot-script.js",
+      "dobot-status": "nodes/dobot-status.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/node-red-contrib-dobot"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=12.0.0"
+  }
+}

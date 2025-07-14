@@ -1,0 +1,68 @@
+node-red-contrib-dobot/
+│
+├── package.json                    # NPM package configuration
+├── LICENSE                         # MIT License
+├── README.md                       # Main documentation
+├── .gitignore                      # Git ignore rules
+├── PROJECT_STRUCTURE.txt           # This file
+│
+├── nodes/                          # Node-RED node implementations
+│   ├── dobot-connection.js         # Connection management logic
+│   ├── dobot-connection.html       # Connection node UI
+│   ├── dobot-dashboard.js          # Dashboard control logic
+│   ├── dobot-dashboard.html        # Dashboard node UI
+│   ├── dobot-move.js              # Movement control logic
+│   ├── dobot-move.html            # Movement node UI
+│   ├── dobot-io.js                # I/O control logic
+│   ├── dobot-io.html              # I/O node UI
+│   ├── dobot-script.js            # Script management logic
+│   ├── dobot-script.html          # Script node UI
+│   ├── dobot-status.js            # Status monitoring logic
+│   └── dobot-status.html          # Status node UI
+│
+├── examples/                       # Example flows and usage
+│   └── example-flow.json          # Complete example flow
+│
+└── docs/                          # Additional documentation
+    ├── api-reference.md           # Complete API documentation
+    ├── error-reference.md         # Error codes and solutions
+    └── setup-guide.md             # Installation and setup instructions
+
+## Quick Setup Instructions:
+
+1. Create this directory structure in your Node-RED directory:
+   mkdir -p ~/.node-red/node-red-contrib-dobot/{nodes,examples,docs}
+
+2. Copy all files to their respective locations
+
+3. Install the palette:
+   cd ~/.node-red/node-red-contrib-dobot
+   npm install
+
+4. Restart Node-RED
+
+5. The Dobot nodes will appear in the palette under the "dobot" category
+
+## Development Notes:
+
+- Each node consists of a .js file (server-side logic) and .html file (client-side UI)
+- The connection node is a configuration node shared by all other nodes
+- All nodes follow Node-RED conventions for error handling and message passing
+- The palette supports multiple simultaneous robot connections
+
+## Testing:
+
+1. Start with the example flow in examples/example-flow.json
+2. Configure your robot's IP address in the connection node
+3. Test basic connectivity with Enable/Disable commands
+4. Gradually add more complex movements and I/O operations
+
+## Publishing:
+
+When ready to publish to npm:
+1. Update version in package.json
+2. Ensure all documentation is complete
+3. Test on multiple Node-RED versions
+4. Run: npm publish
+
+For questions or issues, refer to the documentation in the docs/ directory.
