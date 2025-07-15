@@ -1,0 +1,195 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dobot-command', {
+        category: 'dobot',
+        color: '#87D8F5',
+        defaults: {
+            name: {value: ""},
+            connection: {value: "", type: "dobot-connection", required: true},
+            commandType: {value: "predefined", required: true},
+            command: {value: ""}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-terminal",
+        label: function() {
+            return this.name || this.command || "dobot command";
+        },
+        paletteLabel: "command",
+        oneditprepare: function() {
+            $("#node-input-commandType").on("change", function() {
+                const type = $(this).val();
+                if (type === "custom") {
+                    $("#command-row").hide();
+                    $("#custom-row").show();
+                } else {
+                    $("#command-row").show();
+                    $("#custom-row").hide();
+                }
+            }).trigger("change");
+            
+            // Update help text based on command selection
+            $("#node-input-command").on("change", function() {
+                const cmd = $(this).val();
+                let helpText = "";
+                
+                switch(cmd) {
+                    case "SpeedFactor":
+                        helpText = "msg.payload = 50; // Speed 1-100%";
+                        break;
+                    case "User":
+                    case "Tool":
+                        helpText = "msg.payload = 0; // Index 0-9";
+                        break;
+                    case "PayLoad":
+                        helpText = "msg.payload = {weight: 2.5, inertia: 0.1};";
+                        break;
+                    case "DO":
+                        helpText = "msg.payload = {index: 1, status: 1}; // index: 1-24, status: 0|1";
+                        break;
+                    case "AccJ":
+                    case "AccL":
+                    case "SpeedJ":
+                    case "SpeedL":
+                        helpText = "msg.payload = 50; // 1-100%";
+                        break;
+                    case "Arch":
+                        helpText = "msg.payload = 0; // Index 0-9";
+                        break;
+                    case "CP":
+                        helpText = "msg.payload = 50; // Ratio 1-100";
+                        break;
+                    case "LimZ":
+                        helpText = "msg.payload = 200; // Height in mm";
+                        break;
+                    case "RunScript":
+                        helpText = "msg.payload = 'script.lua'; // Script filename";
+                        break;
+                    case "GetHoldRegs":
+                        helpText = "msg.payload = {id: 0, addr: 3095, count: 1, type: 'U16'};";
+                        break;
+                    case "SetHoldRegs":
+                        helpText = "msg.payload = {id: 0, addr: 3095, count: 1, table: 123, type: 'U16'};";
+                        break;
+                    default:
+                        helpText = "No parameters required";
+                }
+                
+                $("#command-help").text(helpText);
+            }).trigger("change");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dobot-command">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+        <input type="text" id="node-input-connection">
+    </div>
+    <div class="form-row">
+        <label for="node-input-commandType"><i class="fa fa-list"></i> Type</label>
+        <select id="node-input-commandType">
+            <option value="predefined">Predefined Command</option>
+            <option value="custom">Custom Command</option>
+        </select>
+    </div>
+    <div class="form-row" id="command-row">
+        <label for="node-input-command"><i class="fa fa-cog"></i> Command</label>
+        <select id="node-input-command">
+            <optgroup label="Robot Control">
+                <option value="EnableRobot">Enable Robot</option>
+                <option value="DisableRobot">Disable Robot</option>
+                <option value="ClearError">Clear Error</option>
+                <option value="ResetRobot">Reset Robot</option>
+            </optgroup>
+            <optgroup label="Speed & Acceleration">
+                <option value="SpeedFactor">Speed Factor</option>
+                <option value="AccJ">Joint Acceleration</option>
+                <option value="AccL">Linear Acceleration</option>
+                <option value="SpeedJ">Joint Speed</option>
+                <option value="SpeedL">Linear Speed</option>
+            </optgroup>
+            <optgroup label="Coordinate System">
+                <option value="User">User Coordinate</option>
+                <option value="Tool">Tool Coordinate</option>
+            </optgroup>
+            <optgroup label="Parameters">
+                <option value="PayLoad">Set Payload</option>
+                <option value="DO">Digital Output</option>
+                <option value="Arch">Jump Parameters</option>
+                <option value="CP">Smooth Transition</option>
+                <option value="LimZ">Z Limit</option>
+            </optgroup>
+            <optgroup label="Script Control">
+                <option value="RunScript">Run Script</option>
+                <option value="StopScript">Stop Script</option>
+                <option value="PauseScript">Pause Script</option>
+                <option value="ContinueScript">Continue Script</option>
+            </optgroup>
+            <optgroup label="Status">
+                <option value="RobotMode">Robot Mode</option>
+                <option value="GetErrorID">Get Error ID</option>
+            </optgroup>
+            <optgroup label="Motion Control">
+                <option value="Sync">Synchronize Queue</option>
+                <option value="Pause">Pause Motion</option>
+                <option value="Continue">Continue Motion</option>
+            </optgroup>
+            <optgroup label="Registers">
+                <option value="GetHoldRegs">Get Hold Registers</option>
+                <option value="SetHoldRegs">Set Hold Registers</option>
+            </optgroup>
+        </select>
+        <div class="form-tips" id="command-help" style="margin-top: 5px;">Select a command</div>
+    </div>
+    <div class="form-row" id="custom-row" style="display:none;">
+        <label for="node-input-command"><i class="fa fa-code"></i> Command</label>
+        <input type="text" id="node-input-command" placeholder="e.g., EnableRobot()">
+        <div class="form-tips">Enter the complete command including parentheses and parameters</div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dobot-command">
+    <p>Send commands to the Dobot robot. Commands are automatically routed to the appropriate port.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">various</span></dt>
+        <dd>Command parameters (varies by command)</dd>
+        <dt class="optional">command <span class="property-type">string</span></dt>
+        <dd>Override the configured command</dd>
+        <dt class="optional">portType <span class="property-type">string</span></dt>
+        <dd>Force a specific port: "dashboard", "move", or "feedback"</dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Response from the robot</dd>
+        <dt>command <span class="property-type">string</span></dt>
+        <dd>The actual command string sent</dd>
+        <dt class="optional">result <span class="property-type">string</span></dt>
+        <dd>Parsed result data (if applicable)</dd>
+        <dt class="optional">errors <span class="property-type">array</span></dt>
+        <dd>Parsed error array (for GetErrorID command)</dd>
+    </dl>
+    <h3>Command Types</h3>
+    <h4>Predefined Commands</h4>
+    <p>Select from a list of common commands. Parameters are passed via <code>msg.payload</code>.</p>
+    <h4>Custom Commands</h4>
+    <p>Send any valid Dobot command string. The complete command should be in <code>msg.payload</code> or configured in the node.</p>
+    <h3>Examples</h3>
+    <h4>Enable Robot</h4>
+    <pre>// No payload required
+msg = {};</pre>
+    <h4>Set Speed</h4>
+    <pre>msg.payload = 50; // 50% speed</pre>
+    <h4>Digital Output</h4>
+    <pre>msg.payload = {
+    index: 1,
+    status: 1
+};</pre>
+    <h4>Custom Command</h4>
+    <pre>msg.payload = "MovJ(250,0,200,0)";</pre>
+</script>

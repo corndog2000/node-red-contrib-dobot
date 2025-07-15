@@ -1,0 +1,152 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dobot-status', {
+        category: 'dobot',
+        color: '#87D8F5',
+        defaults: {
+            name: {value: ""},
+            connection: {value: "", type: "dobot-connection", required: true},
+            dataType: {value: "all", required: true},
+            outputMode: {value: "stream", required: true},
+            pollInterval: {value: "1000", validate: RED.validators.number()},
+            autoStart: {value: false}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-tachometer",
+        label: function() {
+            return this.name || "dobot " + this.dataType || "dobot status";
+        },
+        paletteLabel: "status",
+        oneditprepare: function() {
+            // Show/hide poll interval based on output mode
+            $("#node-input-outputMode").on("change", function() {
+                const mode = $(this).val();
+                if (mode === "poll") {
+                    $("#poll-interval-row").show();
+                } else {
+                    $("#poll-interval-row").hide();
+                }
+            }).trigger("change");
+            
+            // Update description based on data type
+            $("#node-input-dataType").on("change", function() {
+                const type = $(this).val();
+                let desc = "";
+                
+                switch(type) {
+                    case "position":
+                        desc = "Outputs current tool position (x, y, z, rx, ry, rz)";
+                        break;
+                    case "joints":
+                        desc = "Outputs current joint angles (j1-j6)";
+                        break;
+                    case "io":
+                        desc = "Outputs digital input/output states";
+                        break;
+                    case "mode":
+                        desc = "Outputs robot mode and speed scaling";
+                        break;
+                    case "speed":
+                        desc = "Outputs TCP speed and speed scaling";
+                        break;
+                    case "force":
+                        desc = "Outputs TCP force values";
+                        break;
+                    case "error":
+                        desc = "Outputs current error status (poll mode only)";
+                        break;
+                    case "all":
+                        desc = "Outputs all available status data";
+                        break;
+                }
+                
+                $("#datatype-description").text(desc);
+            }).trigger("change");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dobot-status">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+        <input type="text" id="node-input-connection">
+    </div>
+    <div class="form-row">
+        <label for="node-input-dataType"><i class="fa fa-info"></i> Data Type</label>
+        <select id="node-input-dataType">
+            <option value="all">All Data</option>
+            <option value="position">Position (Pose)</option>
+            <option value="joints">Joint Angles</option>
+            <option value="io">I/O Status</option>
+            <option value="mode">Robot Mode</option>
+            <option value="speed">Speed Data</option>
+            <option value="force">Force Data</option>
+            <option value="error">Error Status</option>
+        </select>
+        <div class="form-tips" id="datatype-description" style="margin-top: 5px;"></div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-outputMode"><i class="fa fa-refresh"></i> Output Mode</label>
+        <select id="node-input-outputMode">
+            <option value="stream">Stream (Real-time)</option>
+            <option value="poll">Poll (Query)</option>
+        </select>
+        <div class="form-tips">Stream mode uses the feedback port for real-time data. Poll mode queries specific data.</div>
+    </div>
+    <div class="form-row" id="poll-interval-row" style="display:none;">
+        <label for="node-input-pollInterval"><i class="fa fa-clock-o"></i> Poll Interval (ms)</label>
+        <input type="number" id="node-input-pollInterval" placeholder="1000">
+        <div class="form-tips">How often to query status in poll mode</div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-autoStart"><i class="fa fa-play"></i> Auto Start</label>
+        <input type="checkbox" id="node-input-autoStart" style="display:inline-block; width:auto; vertical-align:top;">
+        <label for="node-input-autoStart" style="width:70%"> Start monitoring automatically on deploy</label>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dobot-status">
+    <p>Monitor Dobot robot status in real-time using the feedback port or by polling specific data.</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Control command: "start", "stop", or "status"</dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">object</span></dt>
+        <dd>Status data based on configured type</dd>
+        <dt>timestamp <span class="property-type">number</span></dt>
+        <dd>Timestamp of the status reading</dd>
+    </dl>
+    <h3>Output Modes</h3>
+    <h4>Stream Mode (Real-time)</h4>
+    <p>Uses the feedback port (30004) to receive continuous real-time data at approximately 200Hz. Available for:</p>
+    <ul>
+        <li>Position data</li>
+        <li>Joint angles</li>
+        <li>I/O states</li>
+        <li>Speed data</li>
+        <li>Force data</li>
+        <li>Robot mode</li>
+    </ul>
+    <h4>Poll Mode (Query)</h4>
+    <p>Sends specific query commands at configured intervals. Required for error status queries.</p>
+    <h3>Data Types</h3>
+    <ul>
+        <li><b>All Data</b> - Complete status information</li>
+        <li><b>Position</b> - Current tool position (x, y, z, rx, ry, rz)</li>
+        <li><b>Joint Angles</b> - Current joint positions (j1-j6)</li>
+        <li><b>I/O Status</b> - Digital input/output states</li>
+        <li><b>Robot Mode</b> - Current mode and speed scaling</li>
+        <li><b>Speed Data</b> - TCP speed and scaling</li>
+        <li><b>Force Data</b> - TCP force values</li>
+        <li><b>Error Status</b> - Current error codes (poll mode only)</li>
+    </ul>
+    <h3>Usage</h3>
+    <p>Send "start" to begin monitoring, "stop" to cease monitoring, or "status" for a one-time query.</p>
+</script>
