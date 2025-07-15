@@ -2,7 +2,7 @@
   "name": "node-red-contrib-dobot",
   "version": "1.0.0",
   "description": "Node-RED nodes for controlling Dobot robotic arms",
-  "author": "",
+  "author": "Joe Schroedl",
   "license": "",
   "keywords": [
     "node-red",
