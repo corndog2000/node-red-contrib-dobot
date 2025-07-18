@@ -7,7 +7,10 @@
             connection: {value: "", type: "dobot-connection", required: true},
             moveType: {value: "MovJ", required: true},
             coordType: {value: "cartesian"},
-            waitForComplete: {value: false}
+            waitForComplete: {value: false},
+            coordinateStore: {value: ""},
+            coordinateName: {value: ""},
+            robotSpeed: {value: 100, validate: function(v) { return v > 0 && v <= 100; }}
         },
         inputs: 1,
         outputs: 1,
@@ -17,6 +20,70 @@
         },
         paletteLabel: "move",
         oneditprepare: function() {
+            const node = this;
+            
+            // Load coordinate stores
+            const loadCoordinateStores = function() {
+                const storeSelect = $("#node-input-coordinateStore");
+                const currentStore = storeSelect.val() || node.coordinateStore;
+                
+                storeSelect.empty();
+                storeSelect.append('<option value="">None - Use msg.payload</option>');
+                
+                // Find all coordinate nodes and their stores
+                RED.nodes.eachConfig(function(n) {
+                    if (n.type === "dobot-coordinates" && n.storeName) {
+                        const exists = storeSelect.find('option[value="' + n.storeName + '"]').length > 0;
+                        if (!exists) {
+                            storeSelect.append('<option value="' + n.storeName + '">' + n.storeName + '</option>');
+                        }
+                    }
+                });
+                
+                // Also add default if not already there
+                if (storeSelect.find('option[value="default"]').length === 0) {
+                    storeSelect.append('<option value="default">default</option>');
+                }
+                
+                if (currentStore) {
+                    storeSelect.val(currentStore);
+                }
+            };
+            
+            // Load coordinates for selected store
+            const loadCoordinates = function() {
+                const store = $("#node-input-coordinateStore").val();
+                const coordSelect = $("#node-input-coordinateName");
+                const currentCoord = coordSelect.val();
+                
+                coordSelect.empty();
+                coordSelect.append('<option value="">Select coordinate...</option>');
+                
+                if (store) {
+                    $.getJSON("dobot-coordinates/" + store, function(coords) {
+                        coords.forEach(function(coord) {
+                            coordSelect.append('<option value="' + coord.name + '">' + coord.name + ' (' + coord.type + ')</option>');
+                        });
+                        if (currentCoord) {
+                            coordSelect.val(currentCoord);
+                        }
+                    }).fail(function() {
+                        coordSelect.append('<option value="">No coordinates found</option>');
+                    });
+                }
+            };
+            
+            // Initialize
+            loadCoordinateStores();
+            if (this.coordinateStore) {
+                setTimeout(loadCoordinates, 100);
+            }
+            
+            // Handle store selection change
+            $("#node-input-coordinateStore").on("change", function() {
+                loadCoordinates();
+            });
+            
             $("#node-input-moveType").on("change", function() {
                 const moveType = $(this).val();
                 const exampleDiv = $("#move-example");
@@ -125,6 +192,23 @@
         </select>
     </div>
     <div class="form-row">
+        <label for="node-input-coordinateStore"><i class="fa fa-database"></i> Coordinate Store</label>
+        <select id="node-input-coordinateStore">
+            <option value="">None - Use msg.payload</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-coordinateName"><i class="fa fa-map-marker"></i> Coordinate</label>
+        <select id="node-input-coordinateName">
+            <option value="">Select coordinate...</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-robotSpeed"><i class="fa fa-tachometer"></i> Robot Speed %</label>
+        <input type="number" id="node-input-robotSpeed" min="1" max="100" step="1" style="width: 100px;">
+        <span style="margin-left: 10px;">1-100% (default: 100%)</span>
+    </div>
+    <div class="form-row">
         <label for="node-input-waitForComplete"><i class="fa fa-clock-o"></i> Wait for Complete</label>
         <input type="checkbox" id="node-input-waitForComplete" style="display: inline-block; width: auto; vertical-align: top;">
         <label for="node-input-waitForComplete" style="width: auto;">Wait until robot reaches position before continuing</label>
@@ -141,9 +225,11 @@
     <h3>Inputs</h3>
     <dl class="message-properties">
         <dt>payload <span class="property-type">object</span></dt>
-        <dd>Movement parameters (varies by move type)</dd>
+        <dd>Movement parameters (varies by move type). Not required if using predefined coordinates.</dd>
         <dt class="optional">moveType <span class="property-type">string</span></dt>
         <dd>Override the configured move type</dd>
+        <dt class="optional">robotSpeed <span class="property-type">number</span></dt>
+        <dd>Override the robot speed percentage (1-100)</dd>
         <dt class="optional">waitForComplete <span class="property-type">boolean</span></dt>
         <dd>Override the configured wait for complete setting</dd>
     </dl>
@@ -155,6 +241,8 @@
         <dd>The movement command executed</dd>
         <dt>raw <span class="property-type">string</span></dt>
         <dd>The raw command string sent</dd>
+        <dt>robotSpeed <span class="property-type">number</span></dt>
+        <dd>The robot speed percentage used</dd>
         <dt class="optional">synced <span class="property-type">boolean</span></dt>
         <dd>True if wait for complete was enabled and Sync() succeeded</dd>
     </dl>
@@ -176,6 +264,11 @@
         <li><b>Circle</b> - Circular motion for specified count</li>
         <li><b>MoveJog</b> - Continuous jog motion along axis</li>
     </ul>
-    <h3>Wait for Complete</h3>
+    <h3>Configuration</h3>
+    <h4>Coordinate Store</h4>
+    <p>Select a coordinate store to use predefined positions. When a store and coordinate are selected, they will be used instead of msg.payload. The msg.payload can still override the preset coordinates if provided.</p>
+    <h4>Robot Speed</h4>
+    <p>Set the robot movement speed as a percentage (1-100%). The speed is set using the SpeedFactor command before each movement. Default is 100%.</p>
+    <h4>Wait for Complete</h4>
     <p>When enabled, the node will send a Sync() command after movement commands (MovJ, MovL, JointMovJ, RelMovJ, RelMovL, Arc, Circle) to ensure the robot reaches the target position before proceeding to the next node. This prevents multiple move commands from being sent simultaneously and ensures sequential execution.</p>
 </script>

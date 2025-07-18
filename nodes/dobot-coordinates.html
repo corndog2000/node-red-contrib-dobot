@@ -1,0 +1,202 @@
+<script type="text/javascript">
+    RED.nodes.registerType('dobot-coordinates', {
+        category: 'dobot',
+        color: '#87D8F5',
+        defaults: {
+            name: {value: ""},
+            storeName: {value: "default", required: true},
+            coordinatesData: {value: "[]", required: true}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "font-awesome/fa-map-marker",
+        label: function() {
+            return this.name || "dobot coordinates";
+        },
+        paletteLabel: "coordinates",
+        oneditprepare: function() {
+            const node = this;
+            
+            // Initialize JSON editor
+            this.editor = ace.edit("node-input-coordinatesData-editor");
+            this.editor.setTheme("ace/theme/monokai");
+            this.editor.session.setMode("ace/mode/json");
+            this.editor.setOptions({
+                showPrintMargin: false,
+                wrap: true,
+                fontSize: 14
+            });
+            
+            // Set initial value from the hidden input or config
+            const initialValue = $("#node-input-coordinatesData").val() || this.coordinatesData || "[]";
+            try {
+                const data = JSON.parse(initialValue);
+                this.editor.setValue(JSON.stringify(data, null, 2), -1);
+            } catch (e) {
+                this.editor.setValue(initialValue, -1);
+            }
+            
+            // Also update the hidden input field
+            $("#node-input-coordinatesData").val(this.editor.getValue());
+            
+            // Add example button
+            $("#node-input-example-btn").click(function() {
+                const example = [
+                    {
+                        name: "Home Position",
+                        x: 200,
+                        y: 0,
+                        z: 200,
+                        r: 0
+                    },
+                    {
+                        name: "Pick Position",
+                        x: 250,
+                        y: 50,
+                        z: 100,
+                        r: 0
+                    },
+                    {
+                        name: "Place Position",
+                        x: 150,
+                        y: -100,
+                        z: 100,
+                        r: 0
+                    },
+                    {
+                        name: "Safe Height",
+                        x: 200,
+                        y: 0,
+                        z: 250,
+                        r: 0
+                    },
+                    {
+                        name: "Joint Home",
+                        j1: 0,
+                        j2: 0,
+                        j3: 0,
+                        j4: 0
+                    },
+                    {
+                        name: "Arc Path 1",
+                        mid: {x: 250, y: 50, z: 200, r: 0},
+                        end: {x: 300, y: 0, z: 200, r: 0}
+                    }
+                ];
+                node.editor.setValue(JSON.stringify(example, null, 2), -1);
+            });
+            
+            // Validate on change and keep hidden input in sync
+            this.editor.on("change", function() {
+                const value = node.editor.getValue();
+                $("#node-input-coordinatesData").val(value);
+                try {
+                    JSON.parse(value);
+                    $("#node-input-coordinatesData-error").hide();
+                } catch (e) {
+                    $("#node-input-coordinatesData-error").text("Invalid JSON: " + e.message).show();
+                }
+            });
+        },
+        oneditsave: function() {
+            // Save the editor content to the hidden input field
+            if (this.editor) {
+                const content = this.editor.getValue();
+                $("#node-input-coordinatesData").val(content);
+                this.coordinatesData = content;
+                // Clean up the editor
+                this.editor.destroy();
+                delete this.editor;
+            }
+        },
+        oneditcancel: function() {
+            // Clean up the editor on cancel
+            if (this.editor) {
+                this.editor.destroy();
+                delete this.editor;
+            }
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="dobot-coordinates">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-storeName"><i class="fa fa-database"></i> Store Name</label>
+        <input type="text" id="node-input-storeName" placeholder="default">
+        <div class="form-tips">Unique identifier for this coordinate set. Move nodes can select from different stores.</div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-coordinatesData"><i class="fa fa-code"></i> Coordinates</label>
+        <div style="height: 300px; min-height: 150px;" class="node-text-editor" id="node-input-coordinatesData-editor"></div>
+        <input type="hidden" id="node-input-coordinatesData">
+        <div id="node-input-coordinatesData-error" style="color: red; margin-top: 5px; display: none;"></div>
+    </div>
+    <div class="form-row">
+        <button type="button" id="node-input-example-btn" class="red-ui-button">
+            <i class="fa fa-file-code-o"></i> Load Example
+        </button>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="dobot-coordinates">
+    <p>Load and store predefined coordinate positions for Dobot robot movements.</p>
+    <h3>Configuration</h3>
+    <dl class="message-properties">
+        <dt>Store Name <span class="property-type">string</span></dt>
+        <dd>Unique identifier for this coordinate set. Multiple coordinate nodes can exist with different store names.</dd>
+        <dt>Coordinates <span class="property-type">JSON array</span></dt>
+        <dd>Array of coordinate objects. Each object must have a "name" field and coordinate data.</dd>
+    </dl>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">coordinateName <span class="property-type">string</span></dt>
+        <dd>Name of specific coordinate to retrieve. If not provided, returns all coordinates.</dd>
+    </dl>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">object/array</span></dt>
+        <dd>Single coordinate object or array of all coordinates</dd>
+        <dt class="optional">coordinateType <span class="property-type">string</span></dt>
+        <dd>Type of coordinate returned (cartesian/joint/arc/circle)</dd>
+        <dt class="optional">error <span class="property-type">string</span></dt>
+        <dd>Error message if coordinate not found</dd>
+    </dl>
+    <h3>Coordinate Formats</h3>
+    <h4>Cartesian Coordinates</h4>
+    <pre>{
+    "name": "Position 1",
+    "x": 200,
+    "y": 0,
+    "z": 200,
+    "r": 0
+}</pre>
+    <h4>Joint Coordinates</h4>
+    <pre>{
+    "name": "Joint Position",
+    "j1": 0,
+    "j2": 0,
+    "j3": 0,
+    "j4": 0
+}</pre>
+    <h4>Arc Coordinates</h4>
+    <pre>{
+    "name": "Arc Path",
+    "mid": {"x": 250, "y": 50, "z": 200, "r": 0},
+    "end": {"x": 300, "y": 0, "z": 200, "r": 0}
+}</pre>
+    <h4>Circle Coordinates</h4>
+    <pre>{
+    "name": "Circle Path",
+    "count": 2,
+    "mid": {"x": 250, "y": 50, "z": 200, "r": 0},
+    "end": {"x": 300, "y": 0, "z": 200, "r": 0}
+}</pre>
+    <h3>Details</h3>
+    <p>This node loads coordinate data into a global store that can be accessed by Move nodes. 
+    The coordinates are validated and stored when the flow is deployed. Multiple coordinate 
+    nodes can exist with different store names to organize coordinates by purpose or robot.</p>
+</script>

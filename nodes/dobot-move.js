@@ -8,6 +8,9 @@ module.exports = function(RED) {
         this.moveType = config.moveType;
         this.coordType = config.coordType;
         this.waitForComplete = config.waitForComplete;
+        this.coordinateStore = config.coordinateStore || "";
+        this.coordinateName = config.coordinateName || "";
+        this.robotSpeed = config.robotSpeed || 100;
         
         if (!this.connection) {
             this.error("No connection configured");
@@ -58,8 +61,34 @@ module.exports = function(RED) {
             
             const moveType = msg.moveType || node.moveType;
             const waitForComplete = msg.waitForComplete !== undefined ? msg.waitForComplete : node.waitForComplete;
+            const robotSpeed = msg.robotSpeed !== undefined ? msg.robotSpeed : node.robotSpeed;
             let cmdString = "";
             let coords = msg.payload;
+            
+            // Check if we should use predefined coordinates
+            if (!coords && node.coordinateStore && node.coordinateName) {
+                const globalCoords = RED.settings.functionGlobalContext?.dobotCoordinates?.[node.coordinateStore];
+                if (globalCoords) {
+                    const presetCoord = globalCoords.find(c => c.name === node.coordinateName);
+                    if (presetCoord) {
+                        coords = {...presetCoord};
+                        delete coords.name;
+                        delete coords.type;
+                    } else {
+                        done(`Coordinate "${node.coordinateName}" not found in store "${node.coordinateStore}"`);
+                        return;
+                    }
+                } else {
+                    done(`Coordinate store "${node.coordinateStore}" not found`);
+                    return;
+                }
+            }
+            
+            // If still no coordinates, error
+            if (!coords) {
+                done("No coordinates provided in msg.payload and no preset coordinates configured");
+                return;
+            }
             
             // Build command based on move type
             switch(moveType) {
@@ -193,8 +222,25 @@ module.exports = function(RED) {
                     return;
             }
             
+            // Set robot speed if different from 100%
+            const sendMovementCommand = (callback) => {
+                if (robotSpeed !== 100 && robotSpeed > 0 && robotSpeed <= 100) {
+                    // Send speed ratio command first
+                    node.connection.sendCommand(`SpeedFactor(${robotSpeed})`, function(speedErr, speedResponse) {
+                        if (speedErr) {
+                            node.warn(`Failed to set speed: ${speedErr.message}`);
+                        }
+                        // Continue with movement command regardless
+                        node.connection.sendCommand(cmdString, callback);
+                    });
+                } else {
+                    // Send movement command directly
+                    node.connection.sendCommand(cmdString, callback);
+                }
+            };
+            
             // Send command
-            node.connection.sendCommand(cmdString, function(err, response) {
+            sendMovementCommand(function(err, response) {
                 if (err) {
                     done(err);
                     return;
@@ -212,6 +258,7 @@ module.exports = function(RED) {
                         msg.command = moveType;
                         msg.raw = cmdString;
                         msg.synced = !syncErr;
+                        msg.robotSpeed = robotSpeed;
                         
                         send(msg);
                         done();
@@ -220,6 +267,7 @@ module.exports = function(RED) {
                     msg.payload = response;
                     msg.command = moveType;
                     msg.raw = cmdString;
+                    msg.robotSpeed = robotSpeed;
                     
                     send(msg);
                     done();

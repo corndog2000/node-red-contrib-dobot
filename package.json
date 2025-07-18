@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-dobot",
-  "version": "4.0.0",
+  "version": "7.0.0",
   "description": "Node-RED nodes for controlling Dobot robotic arms",
   "author": "Joe Schroedl",
   "license": "",
@@ -18,7 +18,8 @@
       "dobot-move": "nodes/dobot-move.js",
       "dobot-io": "nodes/dobot-io.js",
       "dobot-script": "nodes/dobot-script.js",
-      "dobot-status": "nodes/dobot-status.js"
+      "dobot-status": "nodes/dobot-status.js",
+      "dobot-coordinates": "nodes/dobot-coordinates.js"
     }
   },
   "repository": {
