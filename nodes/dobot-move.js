@@ -7,6 +7,7 @@ module.exports = function(RED) {
         this.connection = RED.nodes.getNode(config.connection);
         this.moveType = config.moveType;
         this.coordType = config.coordType;
+        this.waitForComplete = config.waitForComplete;
         
         if (!this.connection) {
             this.error("No connection configured");
@@ -56,6 +57,7 @@ module.exports = function(RED) {
             done = done || function(err) { if(err) node.error(err, msg) };
             
             const moveType = msg.moveType || node.moveType;
+            const waitForComplete = msg.waitForComplete !== undefined ? msg.waitForComplete : node.waitForComplete;
             let cmdString = "";
             let coords = msg.payload;
             
@@ -198,12 +200,30 @@ module.exports = function(RED) {
                     return;
                 }
                 
-                msg.payload = response;
-                msg.command = moveType;
-                msg.raw = cmdString;
-                
-                send(msg);
-                done();
+                // If waitForComplete is enabled and this is a movement command, send Sync()
+                const movementCommands = ["MovJ", "MovL", "JointMovJ", "RelMovJ", "RelMovL", "Arc", "Circle"];
+                if (waitForComplete && movementCommands.includes(moveType)) {
+                    node.connection.sendCommand("Sync()", function(syncErr, syncResponse) {
+                        if (syncErr) {
+                            node.warn(`Sync command failed: ${syncErr.message}`);
+                        }
+                        
+                        msg.payload = response;
+                        msg.command = moveType;
+                        msg.raw = cmdString;
+                        msg.synced = !syncErr;
+                        
+                        send(msg);
+                        done();
+                    });
+                } else {
+                    msg.payload = response;
+                    msg.command = moveType;
+                    msg.raw = cmdString;
+                    
+                    send(msg);
+                    done();
+                }
             });
         });
         

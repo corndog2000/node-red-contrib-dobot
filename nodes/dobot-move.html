@@ -6,7 +6,8 @@
             name: {value: ""},
             connection: {value: "", type: "dobot-connection", required: true},
             moveType: {value: "MovJ", required: true},
-            coordType: {value: "cartesian"}
+            coordType: {value: "cartesian"},
+            waitForComplete: {value: false}
         },
         inputs: 1,
         outputs: 1,
@@ -124,6 +125,11 @@
         </select>
     </div>
     <div class="form-row">
+        <label for="node-input-waitForComplete"><i class="fa fa-clock-o"></i> Wait for Complete</label>
+        <input type="checkbox" id="node-input-waitForComplete" style="display: inline-block; width: auto; vertical-align: top;">
+        <label for="node-input-waitForComplete" style="width: auto;">Wait until robot reaches position before continuing</label>
+    </div>
+    <div class="form-row">
         <label><i class="fa fa-info-circle"></i> Example</label>
         <div id="move-example" style="font-family: monospace; background-color: #f0f0f0; padding: 10px; border-radius: 4px;">
         </div>
@@ -138,6 +144,8 @@
         <dd>Movement parameters (varies by move type)</dd>
         <dt class="optional">moveType <span class="property-type">string</span></dt>
         <dd>Override the configured move type</dd>
+        <dt class="optional">waitForComplete <span class="property-type">boolean</span></dt>
+        <dd>Override the configured wait for complete setting</dd>
     </dl>
     <h3>Outputs</h3>
     <dl class="message-properties">
@@ -147,6 +155,8 @@
         <dd>The movement command executed</dd>
         <dt>raw <span class="property-type">string</span></dt>
         <dd>The raw command string sent</dd>
+        <dt class="optional">synced <span class="property-type">boolean</span></dt>
+        <dd>True if wait for complete was enabled and Sync() succeeded</dd>
     </dl>
     <h3>Movement Types</h3>
     <h4>Basic Motion</h4>
@@ -166,4 +176,6 @@
         <li><b>Circle</b> - Circular motion for specified count</li>
         <li><b>MoveJog</b> - Continuous jog motion along axis</li>
     </ul>
+    <h3>Wait for Complete</h3>
+    <p>When enabled, the node will send a Sync() command after movement commands (MovJ, MovL, JointMovJ, RelMovJ, RelMovL, Arc, Circle) to ensure the robot reaches the target position before proceeding to the next node. This prevents multiple move commands from being sent simultaneously and ensures sequential execution.</p>
 </script>
