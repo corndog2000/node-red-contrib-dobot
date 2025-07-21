@@ -22,10 +22,13 @@
         oneditprepare: function() {
             const node = this;
             
+            // Store the original values to ensure they persist
+            const originalStore = node.coordinateStore;
+            const originalCoordinate = node.coordinateName;
+            
             // Load coordinate stores
             const loadCoordinateStores = function() {
                 const storeSelect = $("#node-input-coordinateStore");
-                const currentStore = storeSelect.val() || node.coordinateStore;
                 
                 storeSelect.empty();
                 storeSelect.append('<option value="">None - Use msg.payload</option>');
@@ -45,16 +48,17 @@
                     storeSelect.append('<option value="default">default</option>');
                 }
                 
-                if (currentStore) {
-                    storeSelect.val(currentStore);
+                // Set the original value if it exists
+                if (originalStore) {
+                    storeSelect.val(originalStore);
                 }
             };
             
             // Load coordinates for selected store
-            const loadCoordinates = function() {
+            const loadCoordinates = function(preserveSelection = true) {
                 const store = $("#node-input-coordinateStore").val();
                 const coordSelect = $("#node-input-coordinateName");
-                const currentCoord = coordSelect.val();
+                const currentCoord = preserveSelection ? (coordSelect.val() || originalCoordinate) : "";
                 
                 coordSelect.empty();
                 coordSelect.append('<option value="">Select coordinate...</option>');
@@ -75,13 +79,17 @@
             
             // Initialize
             loadCoordinateStores();
-            if (this.coordinateStore) {
-                setTimeout(loadCoordinates, 100);
+            if (originalStore) {
+                // Load coordinates with a delay to ensure the store dropdown is ready
+                setTimeout(function() {
+                    loadCoordinates(true);
+                }, 100);
             }
             
             // Handle store selection change
             $("#node-input-coordinateStore").on("change", function() {
-                loadCoordinates();
+                // When changing stores, don't preserve the coordinate selection
+                loadCoordinates(false);
             });
             
             $("#node-input-moveType").on("change", function() {
@@ -148,6 +156,11 @@
                 
                 exampleDiv.html(example);
             }).trigger("change");
+        },
+        oneditsave: function() {
+            // Ensure coordinate values are saved
+            this.coordinateStore = $("#node-input-coordinateStore").val() || "";
+            this.coordinateName = $("#node-input-coordinateName").val() || "";
         }
     });
 </script>

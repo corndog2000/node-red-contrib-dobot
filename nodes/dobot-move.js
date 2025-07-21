@@ -10,7 +10,7 @@ module.exports = function(RED) {
         this.waitForComplete = config.waitForComplete;
         this.coordinateStore = config.coordinateStore || "";
         this.coordinateName = config.coordinateName || "";
-        this.robotSpeed = config.robotSpeed || 100;
+        this.robotSpeed = parseInt(config.robotSpeed) || 100;
         
         if (!this.connection) {
             this.error("No connection configured");
@@ -61,12 +61,26 @@ module.exports = function(RED) {
             
             const moveType = msg.moveType || node.moveType;
             const waitForComplete = msg.waitForComplete !== undefined ? msg.waitForComplete : node.waitForComplete;
-            const robotSpeed = msg.robotSpeed !== undefined ? msg.robotSpeed : node.robotSpeed;
+            // Always use the node's configured speed, not from incoming message
+            const robotSpeed = parseInt(node.robotSpeed) || 100;
+            
+            // Debug log the speed setting
+            node.warn(`[MOVE NODE] config.robotSpeed=${config.robotSpeed}, node.robotSpeed=${node.robotSpeed}, final robotSpeed=${robotSpeed}, moveType=${moveType}`);
             let cmdString = "";
             let coords = msg.payload;
             
+            // Check if payload appears to be a command response (contains semicolon and curly braces)
+            const isCommandResponse = typeof coords === 'string' && 
+                (coords.includes(';') || coords.includes('{') || coords.includes('}'));
+            
+            // Check if payload is empty or invalid for coordinates
+            const isInvalidPayload = !coords || 
+                isCommandResponse ||
+                (typeof coords === 'string' && coords.trim() === '') ||
+                (typeof coords === 'object' && Object.keys(coords).length === 0);
+            
             // Check if we should use predefined coordinates
-            if (!coords && node.coordinateStore && node.coordinateName) {
+            if (isInvalidPayload && node.coordinateStore && node.coordinateName) {
                 const globalCoords = RED.settings.functionGlobalContext?.dobotCoordinates?.[node.coordinateStore];
                 if (globalCoords) {
                     const presetCoord = globalCoords.find(c => c.name === node.coordinateName);
@@ -84,9 +98,11 @@ module.exports = function(RED) {
                 }
             }
             
-            // If still no coordinates, error
-            if (!coords) {
-                done("No coordinates provided in msg.payload and no preset coordinates configured");
+            // If still no valid coordinates, error
+            if (!coords || 
+                (typeof coords === 'string' && !coords.includes(',')) || // String but not valid coords
+                (typeof coords === 'object' && Object.keys(coords).length === 0)) {
+                done("No valid coordinates provided in msg.payload and no preset coordinates configured");
                 return;
             }
             
@@ -222,19 +238,33 @@ module.exports = function(RED) {
                     return;
             }
             
-            // Set robot speed if different from 100%
+            // Send movement command with speed setting
             const sendMovementCommand = (callback) => {
-                if (robotSpeed !== 100 && robotSpeed > 0 && robotSpeed <= 100) {
-                    // Send speed ratio command first
-                    node.connection.sendCommand(`SpeedFactor(${robotSpeed})`, function(speedErr, speedResponse) {
+                if (robotSpeed > 0 && robotSpeed <= 100) {
+                    // Always send SpeedFactor command since 100% isn't default speed
+                    const speedFactorCmd = `SpeedFactor(${robotSpeed})`;
+                    
+                    node.log(`[SPEED DEBUG] Sending speed command: ${speedFactorCmd}`);
+                    node.warn(`Setting speed to ${robotSpeed}% before ${moveType}`);
+                    
+                    // Send SpeedFactor command first
+                    node.connection.sendCommand(speedFactorCmd, function(speedErr, speedResponse) {
                         if (speedErr) {
+                            node.error(`[SPEED DEBUG] Speed command failed: ${speedErr.message}`);
                             node.warn(`Failed to set speed: ${speedErr.message}`);
+                        } else {
+                            node.log(`[SPEED DEBUG] Speed response: ${speedResponse}`);
+                            node.warn(`Speed command response: ${speedResponse}`);
                         }
-                        // Continue with movement command regardless
+                        
+                        node.log(`[SPEED DEBUG] Now sending movement: ${cmdString}`);
+                        
+                        // Always continue with movement command
                         node.connection.sendCommand(cmdString, callback);
                     });
                 } else {
-                    // Send movement command directly
+                    node.log(`[SPEED DEBUG] Invalid speed ${robotSpeed}, using direct movement: ${cmdString}`);
+                    // Send movement command directly for invalid speeds
                     node.connection.sendCommand(cmdString, callback);
                 }
             };
@@ -259,6 +289,7 @@ module.exports = function(RED) {
                         msg.raw = cmdString;
                         msg.synced = !syncErr;
                         msg.robotSpeed = robotSpeed;
+                        msg.speedCommand = robotSpeed !== 100 ? `SpeedFactor(${robotSpeed})` : "none";
                         
                         send(msg);
                         done();
@@ -268,6 +299,7 @@ module.exports = function(RED) {
                     msg.command = moveType;
                     msg.raw = cmdString;
                     msg.robotSpeed = robotSpeed;
+                    msg.speedCommand = robotSpeed !== 100 ? `SpeedFactor(${robotSpeed})` : "none";
                     
                     send(msg);
                     done();
