@@ -65,7 +65,7 @@ module.exports = function(RED) {
             const robotSpeed = parseInt(node.robotSpeed) || 100;
             
             // Debug log the speed setting
-            node.warn(`[MOVE NODE] config.robotSpeed=${config.robotSpeed}, node.robotSpeed=${node.robotSpeed}, final robotSpeed=${robotSpeed}, moveType=${moveType}`);
+            // node.warn(`[MOVE NODE] config.robotSpeed=${config.robotSpeed}, node.robotSpeed=${node.robotSpeed}, final robotSpeed=${robotSpeed}, moveType=${moveType}`);
             let cmdString = "";
             let coords = msg.payload;
             
@@ -244,26 +244,26 @@ module.exports = function(RED) {
                     // Always send SpeedFactor command since 100% isn't default speed
                     const speedFactorCmd = `SpeedFactor(${robotSpeed})`;
                     
-                    node.log(`[SPEED DEBUG] Sending speed command: ${speedFactorCmd}`);
-                    node.warn(`Setting speed to ${robotSpeed}% before ${moveType}`);
+                    // node.log(`[SPEED DEBUG] Sending speed command: ${speedFactorCmd}`);
+                    // node.warn(`Setting speed to ${robotSpeed}% before ${moveType}`);
                     
                     // Send SpeedFactor command first
                     node.connection.sendCommand(speedFactorCmd, function(speedErr, speedResponse) {
                         if (speedErr) {
                             node.error(`[SPEED DEBUG] Speed command failed: ${speedErr.message}`);
-                            node.warn(`Failed to set speed: ${speedErr.message}`);
+                            // node.warn(`Failed to set speed: ${speedErr.message}`);
                         } else {
-                            node.log(`[SPEED DEBUG] Speed response: ${speedResponse}`);
-                            node.warn(`Speed command response: ${speedResponse}`);
+                            // node.log(`[SPEED DEBUG] Speed response: ${speedResponse}`);
+                            // node.warn(`Speed command response: ${speedResponse}`);
                         }
                         
-                        node.log(`[SPEED DEBUG] Now sending movement: ${cmdString}`);
+                        // node.log(`[SPEED DEBUG] Now sending movement: ${cmdString}`);
                         
                         // Always continue with movement command
                         node.connection.sendCommand(cmdString, callback);
                     });
                 } else {
-                    node.log(`[SPEED DEBUG] Invalid speed ${robotSpeed}, using direct movement: ${cmdString}`);
+                    // node.log(`[SPEED DEBUG] Invalid speed ${robotSpeed}, using direct movement: ${cmdString}`);
                     // Send movement command directly for invalid speeds
                     node.connection.sendCommand(cmdString, callback);
                 }
@@ -281,7 +281,7 @@ module.exports = function(RED) {
                 if (waitForComplete && movementCommands.includes(moveType)) {
                     node.connection.sendCommand("Sync()", function(syncErr, syncResponse) {
                         if (syncErr) {
-                            node.warn(`Sync command failed: ${syncErr.message}`);
+                            // node.warn(`Sync command failed: ${syncErr.message}`);
                         }
                         
                         msg.payload = response;
