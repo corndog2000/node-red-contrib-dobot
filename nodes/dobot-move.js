@@ -80,20 +80,24 @@ module.exports = function(RED) {
                 (typeof coords === 'object' && Object.keys(coords).length === 0);
             
             // Check if we should use predefined coordinates
-            if (isInvalidPayload && node.coordinateStore && node.coordinateName) {
-                const globalCoords = RED.settings.functionGlobalContext?.dobotCoordinates?.[node.coordinateStore];
+            // Priority: 1. msg.coordinateName (dynamic), 2. node.coordinateName (configured)
+            const coordinateName = msg.coordinateName || node.coordinateName;
+            const coordinateStore = msg.coordinateStore || node.coordinateStore;
+            
+            if (isInvalidPayload && coordinateStore && coordinateName) {
+                const globalCoords = RED.settings.functionGlobalContext?.dobotCoordinates?.[coordinateStore];
                 if (globalCoords) {
-                    const presetCoord = globalCoords.find(c => c.name === node.coordinateName);
+                    const presetCoord = globalCoords.find(c => c.name === coordinateName);
                     if (presetCoord) {
                         coords = {...presetCoord};
                         delete coords.name;
                         delete coords.type;
                     } else {
-                        done(`Coordinate "${node.coordinateName}" not found in store "${node.coordinateStore}"`);
+                        done(`Coordinate "${coordinateName}" not found in store "${coordinateStore}"`);
                         return;
                     }
                 } else {
-                    done(`Coordinate store "${node.coordinateStore}" not found`);
+                    done(`Coordinate store "${coordinateStore}" not found`);
                     return;
                 }
             }
